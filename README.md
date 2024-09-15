@@ -2,6 +2,7 @@
 
 [Dockerhub - ziadhorat/repopack-ui](https://hub.docker.com/r/ziadhorat/repopack-ui)
 
+![Screenshot](https://github.com/user-attachments/assets/a7081763-e507-48a0-9c93-6f17f0e1205b)
 
 ## Overview
 This aims to be a simple & small application that's a containerised web gui for [yamadashy/repopack](https://github.com/yamadashy/repopack).
