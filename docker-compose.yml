@@ -1,0 +1,8 @@
+version: '3'
+services:
+  repopack-ui:
+    container_name: repopack-ui
+    image: ziadhorat/repopack-ui
+    ports:
+      - "32123:32123"
+
