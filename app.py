@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-from urllib.parse import urlparse, quote_plus
 import subprocess
 import sys
 import os
@@ -7,7 +6,6 @@ import glob
 import shutil
 import re
 import json
-import requests
 
 app = Flask(__name__)
 
@@ -18,7 +16,6 @@ class State:
         self.repo_url = ""
         self.username = ""
         self.password = ""
-        self.branch = ""
         self.include_patterns = ""
         self.ignore_patterns = ""
         self.top_files_len = ""
@@ -37,6 +34,11 @@ def hide_credentials(cli_output):
     sanitized_output = re.sub(pattern, r"\1****:****@", cli_output)
     return sanitized_output
 
+import os
+import subprocess
+import sys
+import glob
+
 def pack_repo():
     repo_url = state.repo_url
     if state.username and state.password:
@@ -45,8 +47,6 @@ def pack_repo():
 
     repopack_cmd = ["repopack", "--remote", repo_url]
 
-    if state.branch:
-        repopack_cmd.extend(["--branch", state.branch])
     if state.include_patterns:
         repopack_cmd.extend(["--include", state.include_patterns])
     if state.ignore_patterns:
@@ -64,6 +64,9 @@ def pack_repo():
     if state.verbose:
         repopack_cmd.append("--verbose")
 
+    # Print the full command being executed
+    print(f"Executing command: {' '.join(repopack_cmd)}", file=sys.stderr)
+
     try:
         process = subprocess.Popen(repopack_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         cli_output = ""
@@ -73,16 +76,41 @@ def pack_repo():
         process.wait()
         state.cli_output = cli_output
 
-        output_file = "/app/repopack-output.txt"
-        if os.path.exists(output_file):
+        # Print the return code
+        print(f"Repopack process returned with code: {process.returncode}", file=sys.stderr)
+
+        # Search for the output file in multiple locations
+        possible_locations = [
+            "/app/repopack-output.txt",
+            "/app/repopack-output.xml",
+            "/app/repopack-output.md",
+            "./repopack-output.txt",
+            "./repopack-output.xml",
+            "./repopack-output.md",
+        ]
+
+        output_file = None
+        for location in possible_locations:
+            if os.path.exists(location):
+                output_file = location
+                break
+
+        if output_file:
             with open(output_file, 'r') as f:
                 state.output = f.read()
+            print(f"Found output file at: {output_file}", file=sys.stderr)
         else:
-            state.output = "repopack-output.txt not found. Check the terminal for details."
+            state.output = "repopack-output file not found. Check the CLI output for details."
+            print("Output file not found. Searched in:", file=sys.stderr)
+            for location in possible_locations:
+                print(f"  - {location}", file=sys.stderr)
+            print("Current working directory:", os.getcwd(), file=sys.stderr)
+            print("Files in current directory:", os.listdir(), file=sys.stderr)
 
         cleanup_files()
     except Exception as e:
         state.output = f"Error: {str(e)}"
+        print(f"Exception occurred: {str(e)}", file=sys.stderr)
 
     return jsonify({
         'cli_output': hide_credentials(state.cli_output),
@@ -93,12 +121,15 @@ def cleanup_files():
     for ext in ['txt', 'xml', 'md']:
         output_file = f"/app/repopack-output.{ext}"
         if os.path.exists(output_file):
+            print(f"Removing file: {output_file}", file=sys.stderr)
             os.remove(output_file)
 
     for file in glob.glob("/tmp/repopack-*"):
         if os.path.isfile(file):
+            print(f"Removing file: {file}", file=sys.stderr)
             os.remove(file)
         elif os.path.isdir(file):
+            print(f"Removing directory: {file}", file=sys.stderr)
             shutil.rmtree(file)
 
 @app.route('/')
@@ -110,7 +141,6 @@ def pack():
     state.repo_url = request.form.get('repo_url', '').strip()
     state.username = request.form.get('username', '').strip()
     state.password = request.form.get('password', '').strip()
-    state.branch = request.form.get('branch', '').strip()
     state.include_patterns = request.form.get('include_patterns', '').strip()
     state.ignore_patterns = request.form.get('ignore_patterns', '').strip()
     state.top_files_len = request.form.get('top_files_len', '').strip()
@@ -120,7 +150,6 @@ def pack():
     state.remove_empty_lines = request.form.get('remove_empty_lines') == 'true'
     state.verbose = request.form.get('verbose') == 'true'
 
-    # Server-side validation
     if not state.repo_url.endswith('.git'):
         return jsonify({'error': 'Repository URL must end with .git'})
     
@@ -146,139 +175,6 @@ def update_config():
     with open(CONFIG_FILE, 'w') as f:
         json.dump(new_config, f, indent=2)
     return jsonify({'message': 'Configuration updated successfully'})
-
-import re
-import base64
-from urllib.parse import urlparse
-
-@app.route('/get_branches', methods=['POST'])
-def get_branches():
-    repo_url = request.json.get('repo_url', '').strip()
-    username = request.json.get('username', '')
-    password = request.json.get('password', '')
-
-    if not repo_url.endswith('.git'):
-        return jsonify({'error': 'Invalid repository URL'})
-
-    parsed_url = urlparse(repo_url)
-    hostname = parsed_url.hostname
-
-    if hostname == 'github.com':
-        return get_github_branches(repo_url, username, password)
-    elif hostname == 'gitlab.com':
-        return get_gitlab_branches(repo_url, username, password)
-    elif hostname == 'gitea.com':
-        return get_gitea_branches(repo_url, username, password)
-    else:
-        # Handle self-hosted Git repositories
-        return get_generic_git_branches(repo_url, username, password)
-
-def get_generic_git_branches(repo_url, username, password):
-    parsed_url = urlparse(repo_url)
-    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-    
-    # Extract the project path
-    path = parsed_url.path.strip('/').replace('.git', '')
-    encoded_path = quote_plus(path)
-    
-    # Try GitLab API endpoint first
-    gitlab_api_url = f"{base_url}/api/v4/projects/{encoded_path}/repository/branches"
-    
-    headers = {}
-    if username and password:
-        auth = base64.b64encode(f"{username}:{password}".encode()).decode()
-        headers['Authorization'] = f'Basic {auth}'
-    
-    try:
-        response = requests.get(gitlab_api_url, headers=headers)
-        response.raise_for_status()
-        branches = [branch['name'] for branch in response.json()]
-        return jsonify({'branches': branches})
-    except requests.RequestException as gitlab_error:
-        print(f"GitLab API error: {gitlab_error}")  # Debug print
-        
-        # If GitLab API fails, try generic API endpoints
-        api_endpoints = [
-            f"{base_url}/api/v1/repos/{path}/branches",  # Gitea-like
-            f"{base_url}/api/repos/{path}/branches",  # Generic
-        ]
-        
-        for endpoint in api_endpoints:
-            try:
-                response = requests.get(endpoint, headers=headers)
-                response.raise_for_status()
-                data = response.json()
-                if isinstance(data, list):
-                    branches = [branch['name'] if isinstance(branch, dict) else branch for branch in data]
-                    return jsonify({'branches': branches})
-            except requests.RequestException as e:
-                print(f"API endpoint error: {e}")  # Debug print
-                continue
-    
-    return jsonify({'error': 'Unable to fetch branches. The repository might be private or the API is not supported.'})
-
-def get_github_branches(repo_url, username, password):
-    parts = re.search(r'github\.com[/:]([^/]+)/([^/.]+)', repo_url)
-    if not parts:
-        return jsonify({'error': 'Invalid GitHub repository URL'})
-    
-    owner, repo = parts.groups()
-    api_url = f"https://api.github.com/repos/{owner}/{repo}/branches"
-    
-    headers = {}
-    if username and password:
-        auth = base64.b64encode(f"{username}:{password}".encode()).decode()
-        headers['Authorization'] = f'Basic {auth}'
-
-    try:
-        response = requests.get(api_url, headers=headers)
-        response.raise_for_status()
-        branches = [branch['name'] for branch in response.json()]
-        return jsonify({'branches': branches})
-    except requests.RequestException as e:
-        return jsonify({'error': f'Failed to fetch branches: {str(e)}'})
-
-def get_gitlab_branches(repo_url, username, password):
-    parts = re.search(r'gitlab\.com[/:]([^/]+)/([^/.]+)', repo_url)
-    if not parts:
-        return jsonify({'error': 'Invalid GitLab repository URL'})
-    
-    owner, repo = parts.groups()
-    api_url = f"https://gitlab.com/api/v4/projects/{owner}%2F{repo}/repository/branches"
-    
-    headers = {}
-    if username and password:
-        auth = base64.b64encode(f"{username}:{password}".encode()).decode()
-        headers['Authorization'] = f'Basic {auth}'
-
-    try:
-        response = requests.get(api_url, headers=headers)
-        response.raise_for_status()
-        branches = [branch['name'] for branch in response.json()]
-        return jsonify({'branches': branches})
-    except requests.RequestException as e:
-        return jsonify({'error': f'Failed to fetch branches: {str(e)}'})
-
-def get_gitea_branches(repo_url, username, password):
-    parts = re.search(r'gitea\.com[/:]([^/]+)/([^/.]+)', repo_url)
-    if not parts:
-        return jsonify({'error': 'Invalid Gitea repository URL'})
-    
-    owner, repo = parts.groups()
-    api_url = f"https://gitea.com/api/v1/repos/{owner}/{repo}/branches"
-    
-    headers = {}
-    if username and password:
-        auth = base64.b64encode(f"{username}:{password}".encode()).decode()
-        headers['Authorization'] = f'Basic {auth}'
-
-    try:
-        response = requests.get(api_url, headers=headers)
-        response.raise_for_status()
-        branches = [branch['name'] for branch in response.json()]
-        return jsonify({'branches': branches})
-    except requests.RequestException as e:
-        return jsonify({'error': f'Failed to fetch branches: {str(e)}'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=32123, debug=True)

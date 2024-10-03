@@ -164,9 +164,6 @@
                     <input type="text" name="username" placeholder="Username (optional)">
                     <input type="password" name="password" placeholder="Password (optional)">
                 </div>
-                <select name="branch" id="branchSelect">
-                    <option value="">Select Branch (optional)</option>
-                </select>
                 <div class="flex-container">
                     <input type="text" name="include_patterns" placeholder="Include Patterns (optional, comma-separated)">
                     <input type="text" name="ignore_patterns" placeholder="Ignore Patterns (optional, comma-separated)">
@@ -239,86 +236,15 @@
     <script>
         const repoForm = document.getElementById('repopackForm');
         const errorMessage = document.getElementById('errorMessage');
-        const branchSelect = document.getElementById('branchSelect');
         const updateConfigBtn = document.getElementById('updateConfigBtn');
         const configPopup = document.getElementById('configPopup');
         const configEditor = document.getElementById('configEditor');
         const saveConfigBtn = document.getElementById('saveConfigBtn');
         const closePopup = document.querySelector('.close');
-        const repoUrlInput = repoForm.querySelector('input[name="repo_url"]');
-        const usernameInput = repoForm.querySelector('input[name="username"]');
-        const passwordInput = repoForm.querySelector('input[name="password"]');
-
-        function fetchBranches() {
-            const repoUrl = repoUrlInput.value.trim();
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value.trim();
-
-            if (repoUrl.endsWith('.git')) {
-                errorMessage.textContent = 'Fetching branches...';
-                branchSelect.innerHTML = '<option value="">Loading branches...</option>';
-                fetch('/get_branches', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        repo_url: repoUrl,
-                        username: username,
-                        password: password
-                    }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        errorMessage.textContent = `Error: ${data.error}`;
-                        console.error('Error fetching branches:', data.error);
-                        branchSelect.innerHTML = '<option value="">Unable to fetch branches</option>';
-                    } else {
-                        errorMessage.textContent = '';
-                        branchSelect.innerHTML = '<option value="">Select Branch (optional)</option>';
-                        data.branches.forEach(branch => {
-                            const option = document.createElement('option');
-                            option.value = branch;
-                            option.textContent = branch;
-                            branchSelect.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => {
-                    errorMessage.textContent = `Error: ${error.message}`;
-                    console.error('Error:', error);
-                    branchSelect.innerHTML = '<option value="">Unable to fetch branches</option>';
-                });
-            } else {
-                branchSelect.innerHTML = '<option value="">Enter a valid Git URL</option>';
-            }
-        }
-
-        repoUrlInput.addEventListener('blur', fetchBranches);
-        usernameInput.addEventListener('blur', fetchBranches);
-        passwordInput.addEventListener('blur', fetchBranches);
 
         repoForm.addEventListener('submit', function(e) {
             e.preventDefault();
             errorMessage.textContent = '';
-
-            const repoUrl = this.repo_url.value.trim();
-            if (!repoUrl.endsWith('.git')) {
-                errorMessage.textContent = 'Error: Repository URL must end with .git';
-                return;
-            }
-
-            if (!repoUrl.startsWith('https://') && !repoUrl.startsWith('http://')) {
-                errorMessage.textContent = 'Error: Repository URL must start with http:// or https://';
-                return;
-            }
-
-            const topFilesLen = this.top_files_len.value.trim();
-            if (topFilesLen && !(/^\d+$/.test(topFilesLen))) {
-                errorMessage.textContent = 'Error: Top Files Length must be a positive integer';
-                return;
-            }
 
             const formData = new FormData(this);
             formData.set('show_line_numbers', this.show_line_numbers.checked);
