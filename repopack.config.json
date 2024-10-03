@@ -1,0 +1,21 @@
+{
+  "ignore": {
+    "customPatterns": [],
+    "useDefaultPatterns": true,
+    "useGitignore": true
+  },
+  "include": [
+    "**/*"
+  ],
+  "output": {
+    "filePath": "repopack-output.txt",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": false,
+    "style": "plain",
+    "topFilesLength": 5
+  },
+  "security": {
+    "enableSecurityCheck": false
+  }
+}

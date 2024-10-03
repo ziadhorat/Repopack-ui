@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repopack UI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .main-container {
+            width: 100%;
+            max-width: 1600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .container {
+            background: #e8eaf6;
+            padding: 16px;
+            border-radius: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input, select {
+            width: 100%;
+            font-size: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .flex-container {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .flex-container > * {
+            flex: 1 1 200px;
+        }
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+        .checkbox-container label {
+            display: flex;
+            align-items: center;
+        }
+        .radio-container {
+            margin-bottom: 10px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        button {
+            border-radius: 20px;
+            background: #4CAF50;
+            color: #FFFFFF;
+            height: 40px;
+            border: none;
+            padding: 0 20px;
+            cursor: pointer;
+        }
+        .output-container {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+        }
+        .cli-output, .repopack-output {
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        .cli-output {
+            background: #333333;
+            color: #FFFFFF;
+            flex: 3;
+        }
+        .repopack-output {
+            background: #f0f0f0;
+            flex: 7;
+        }
+        h2 {
+            color: #000000;
+            margin-top: 0;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+        }
+        .error-message {
+            color: #ff0000;
+            margin-top: 10px;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .popup-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #configEditor {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 10px;
+        }
+        .output-buttons {
+            margin-bottom: 10px;
+        }
+        .output-buttons button {
+            margin-right: 10px;
+        }
+        @media (max-width: 768px) {
+            .output-container {
+                flex-direction: column;
+            }
+            .cli-output, .repopack-output {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <h1>Repopack</h1>
+        <div class="container">
+            <form id="repopackForm">
+                <input type="text" name="repo_url" placeholder="Repository URL" required>
+                <div class="flex-container">
+                    <input type="text" name="username" placeholder="Username (optional)">
+                    <input type="password" name="password" placeholder="Password (optional)">
+                </div>
+                <select name="branch" id="branchSelect">
+                    <option value="">Select Branch (optional)</option>
+                </select>
+                <div class="flex-container">
+                    <input type="text" name="include_patterns" placeholder="Include Patterns (optional, comma-separated)">
+                    <input type="text" name="ignore_patterns" placeholder="Ignore Patterns (optional, comma-separated)">
+                    <input type="text" name="top_files_len" placeholder="Top Files Length (optional)">
+                </div>
+                <div class="checkbox-container">
+                    <label>
+                        <input type="checkbox" id="show_line_numbers" name="show_line_numbers">
+                        Show Line Numbers
+                    </label>
+                    <label>
+                        <input type="checkbox" id="remove_comments" name="remove_comments">
+                        Remove Comments
+                    </label>
+                    <label>
+                        <input type="checkbox" id="remove_empty_lines" name="remove_empty_lines">
+                        Remove Empty Lines
+                    </label>
+                    <label>
+                        <input type="checkbox" id="verbose" name="verbose">
+                        Verbose Logging
+                    </label>
+                </div>
+                <div class="radio-container">
+                    <span>Output Style:</span>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="output_style" value="plain" checked> Plain
+                        </label>
+                        <label>
+                            <input type="radio" name="output_style" value="xml"> XML
+                        </label>
+                        <label>
+                            <input type="radio" name="output_style" value="markdown"> Markdown
+                        </label>
+                    </div>
+                </div>
+                <div class="button-container">
+                    <button id="updateConfigBtn" type="button">Update Config</button>
+                    <button type="submit">Pack Repository</button>
+                </div>
+            </form>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+        <div class="output-container">
+            <div class="cli-output">
+                <h2>CLI Output</h2>
+                <pre id="cliOutput"></pre>
+            </div>
+            <div class="repopack-output">
+                <h2>Repopack Output</h2>
+                <div class="output-buttons">
+                    <button id="copyOutputBtn">Copy</button>
+                    <button id="downloadOutputBtn">Download</button>
+                </div>
+                <pre id="repopackOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="configPopup" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <h2>Edit Configuration</h2>
+            <textarea id="configEditor"></textarea>
+            <button id="saveConfigBtn">Save Configuration</button>
+        </div>
+    </div>
+
+    <script>
+        const repoForm = document.getElementById('repopackForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const branchSelect = document.getElementById('branchSelect');
+        const updateConfigBtn = document.getElementById('updateConfigBtn');
+        const configPopup = document.getElementById('configPopup');
+        const configEditor = document.getElementById('configEditor');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const closePopup = document.querySelector('.close');
+        const repoUrlInput = repoForm.querySelector('input[name="repo_url"]');
+        const usernameInput = repoForm.querySelector('input[name="username"]');
+        const passwordInput = repoForm.querySelector('input[name="password"]');
+
+        function fetchBranches() {
+            const repoUrl = repoUrlInput.value.trim();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (repoUrl.endsWith('.git')) {
+                errorMessage.textContent = 'Fetching branches...';
+                branchSelect.innerHTML = '<option value="">Loading branches...</option>';
+                fetch('/get_branches', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        repo_url: repoUrl,
+                        username: username,
+                        password: password
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        errorMessage.textContent = `Error: ${data.error}`;
+                        console.error('Error fetching branches:', data.error);
+                        branchSelect.innerHTML = '<option value="">Unable to fetch branches</option>';
+                    } else {
+                        errorMessage.textContent = '';
+                        branchSelect.innerHTML = '<option value="">Select Branch (optional)</option>';
+                        data.branches.forEach(branch => {
+                            const option = document.createElement('option');
+                            option.value = branch;
+                            option.textContent = branch;
+                            branchSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    errorMessage.textContent = `Error: ${error.message}`;
+                    console.error('Error:', error);
+                    branchSelect.innerHTML = '<option value="">Unable to fetch branches</option>';
+                });
+            } else {
+                branchSelect.innerHTML = '<option value="">Enter a valid Git URL</option>';
+            }
+        }
+
+        repoUrlInput.addEventListener('blur', fetchBranches);
+        usernameInput.addEventListener('blur', fetchBranches);
+        passwordInput.addEventListener('blur', fetchBranches);
+
+        repoForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            errorMessage.textContent = '';
+
+            const repoUrl = this.repo_url.value.trim();
+            if (!repoUrl.endsWith('.git')) {
+                errorMessage.textContent = 'Error: Repository URL must end with .git';
+                return;
+            }
+
+            if (!repoUrl.startsWith('https://') && !repoUrl.startsWith('http://')) {
+                errorMessage.textContent = 'Error: Repository URL must start with http:// or https://';
+                return;
+            }
+
+            const topFilesLen = this.top_files_len.value.trim();
+            if (topFilesLen && !(/^\d+$/.test(topFilesLen))) {
+                errorMessage.textContent = 'Error: Top Files Length must be a positive integer';
+                return;
+            }
+
+            const formData = new FormData(this);
+            formData.set('show_line_numbers', this.show_line_numbers.checked);
+            formData.set('remove_comments', this.remove_comments.checked);
+            formData.set('remove_empty_lines', this.remove_empty_lines.checked);
+            formData.set('verbose', this.verbose.checked);
+
+            fetch('/pack', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    errorMessage.textContent = `Error: ${data.error}`;
+                } else {
+                    document.getElementById('cliOutput').textContent = data.cli_output;
+                    document.getElementById('repopackOutput').textContent = data.output;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorMessage.textContent = `An error occurred: ${error.message}`;
+            });
+        });
+
+        updateConfigBtn.addEventListener('click', function() {
+            fetch('/get_config')
+                .then(response => response.json())
+                .then(data => {
+                    configEditor.value = JSON.stringify(data, null, 2);
+                    configPopup.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    errorMessage.textContent = `Failed to load configuration: ${error.message}`;
+                });
+        });
+
+        saveConfigBtn.addEventListener('click', function() {
+            try {
+                const newConfig = JSON.parse(configEditor.value);
+                fetch('/update_config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newConfig),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    configPopup.style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(`Failed to update configuration: ${error.message}`);
+                });
+            } catch (error) {
+                alert(`Invalid JSON: ${error.message}`);
+            }
+        });
+
+        closePopup.addEventListener('click', function() {
+            configPopup.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target == configPopup) {
+                configPopup.style.display = 'none';
+            }
+        });
+
+        document.getElementById('copyOutputBtn').addEventListener('click', function() {
+            const output = document.getElementById('repopackOutput').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                alert('Output copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        });
+
+        document.getElementById('downloadOutputBtn').addEventListener('click', function() {
+            const output = document.getElementById('repopackOutput').textContent;
+            const outputStyle = document.querySelector('input[name="output_style"]:checked').value;
+            let fileExtension;
+            switch (outputStyle) {
+                case 'xml':
+                    fileExtension = 'xml';
+                    break;
+                case 'markdown':
+                    fileExtension = 'md';
+                    break;
+                default:
+                    fileExtension = 'txt';
+            }
+            const blob = new Blob([output], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `repopack-output.${fileExtension}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>

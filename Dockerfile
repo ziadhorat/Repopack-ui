@@ -4,4 +4,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
-CMD ["mesop", "app.py"]
+COPY repopack.config.json /app/repopack.config.json
+EXPOSE 32123
+CMD ["python", "app.py"]
