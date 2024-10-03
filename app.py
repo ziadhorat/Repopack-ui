@@ -109,7 +109,7 @@ def pack_repo():
 
         cleanup_files()
     except Exception as e:
-        state.output = f"Error: {str(e)}"
+        state.output = "An internal error has occurred. Please try again later."
         print(f"Exception occurred: {str(e)}", file=sys.stderr)
 
     return jsonify({
