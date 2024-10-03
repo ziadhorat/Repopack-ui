@@ -5,7 +5,8 @@ Repopack is a powerful tool that packs your entire repository into a single, AI-
 
 [Dockerhub - ziadhorat/repopack-ui](https://hub.docker.com/r/ziadhorat/repopack-ui)
 
-![Screenshot](https://github.com/user-attachments/assets/a7081763-e507-48a0-9c93-6f17f0e1205b)
+![Screenshot](https://github.com/user-attachments/assets/5a4f4268-ce43-4592-8f6a-54c15d1921e4)
+
 
 ## 🚀 Docker Run Command
 If you prefer to run the container using `docker run`, use the following command:
