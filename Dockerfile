@@ -16,7 +16,8 @@ COPY requirements.txt .
 # Upgrade pip and install setuptools>=70.0.0, then install the Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir "setuptools>=70.0.0" && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    apk del .build-deps
 
 # Copy the rest of the application
 COPY . .
