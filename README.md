@@ -49,7 +49,9 @@ docker-compose up --build
 Open a web browser and navigate to `http://localhost:32123`.
 
 ## 📝 TODO
-- Implement config options (So we can do stuff like ignore secrets).
+- Make radio buttons inline aswell
+- Check if config works
+- Fix the 2 check boxes that dont work
   
 ## ✨ Contributing
 Feel free to submit issues, feature or pull requests. 
