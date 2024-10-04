@@ -1,5 +1,5 @@
 # Use Alpine Linux as the base image
-FROM python:3.11-alpine
+FROM python:3.12-alpine
 
 # Install necessary build dependencies
 RUN apk add --no-cache nodejs npm git
