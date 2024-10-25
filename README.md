@@ -3,6 +3,15 @@ This aims to be a simple & small application that's a containerised web gui for 
 
 Repopack is a powerful tool that packs your entire repository into a single, AI-friendly file.
 
+
+![size](https://img.shields.io/docker/image-size/ziadhorat/repopack-ui/latest?color=0eb305)
+![pulls](https://img.shields.io/docker/pulls/ziadhorat/repopack-ui?color=2b75d6) 
+[![GitHub Release][release-img]][release]
+[![License][license-img]][license]
+[![CodeQL](https://github.com/ziadhorat/Repopack-ui/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/ziadhorat/Eepopack-ui/actions/workflows/github-code-scanning/codeql)
+[![Trivy](https://github.com/ziadhorat/Repopack-ui/actions/workflows/trivy.yml/badge.svg)](https://github.com/ziadhorat/Repopack-ui/actions/workflows/trivy.yml)
+[![Docker Image CI](https://github.com/ziadhorat/Repopack-ui/actions/workflows/docker-image.yml/badge.svg)](https://github.com/ziadhorat/Repopack-ui/actions/workflows/docker-image.yml)
+
 [Dockerhub - ziadhorat/repopack-ui](https://hub.docker.com/r/ziadhorat/repopack-ui)
 
 ![Screenshot](https://github.com/user-attachments/assets/5a4f4268-ce43-4592-8f6a-54c15d1921e4)
