@@ -68,3 +68,8 @@ All contributions are welcome!
 
 ## 📜 License
 This project is licensed under the MIT License. See the LICENSE file for details.
+
+[release]: https://github.com/ziadhorat/Repopack-ui/releases/latest
+[release-img]: https://img.shields.io/github/v/release/ziadhorat/Repopack-ui?logo=github
+[license]: https://github.com/ziadhorat/Repopack-ui/blob/master/LICENSE
+[license-img]: https://img.shields.io/github/license/ziadhorat/Repopack-ui
