@@ -64,8 +64,9 @@ def pack_repo():
     if state.verbose:
         repopack_cmd.append("--verbose")
 
-    # Print the full command being executed
-    print(f"Executing command: {' '.join(repopack_cmd)}", file=sys.stderr)
+    # Print the sanitized command being executed
+    sanitized_cmd = hide_credentials(' '.join(repopack_cmd))
+    print(f"Executing command: {sanitized_cmd}", file=sys.stderr)
 
     try:
         process = subprocess.Popen(repopack_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
